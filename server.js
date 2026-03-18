@@ -9,19 +9,17 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Connect to NeonDB
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { require: true }
 });
 
-// Get all expenses and calculate balances
+// Get all expenses
 app.get('/api/expenses', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM expenses ORDER BY expense_date DESC, id DESC');
         const expenses = result.rows;
 
-        // Calculate who owes whom
         let sasiTotal = 0;
         let lalithaTotal = 0;
 
@@ -42,12 +40,11 @@ app.get('/api/expenses', async (req, res) => {
 
         res.json({ expenses, sasiTotal, lalithaTotal, settlementMessage });
     } catch (err) {
-        console.error(err);
         res.status(500).json({ error: 'Database error' });
     }
 });
 
-// Add a new expense
+// Add new expense
 app.post('/api/expenses', async (req, res) => {
     const { payer, amount, description, category, expense_date } = req.body;
     try {
@@ -57,8 +54,33 @@ app.post('/api/expenses', async (req, res) => {
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
-        console.error(err);
         res.status(500).json({ error: 'Failed to add expense' });
+    }
+});
+
+// Update an expense (EDIT)
+app.put('/api/expenses/:id', async (req, res) => {
+    const { id } = req.params;
+    const { payer, amount, description, category, expense_date } = req.body;
+    try {
+        const result = await pool.query(
+            'UPDATE expenses SET payer = $1, amount = $2, description = $3, category = $4, expense_date = $5 WHERE id = $6 RETURNING *',
+            [payer, amount, description, category, expense_date, id]
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to update expense' });
+    }
+});
+
+// Delete an expense
+app.delete('/api/expenses/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('DELETE FROM expenses WHERE id = $1', [id]);
+        res.json({ message: 'Expense deleted successfully' });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to delete expense' });
     }
 });
 
