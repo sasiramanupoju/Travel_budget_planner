@@ -4,51 +4,120 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Warangal Trip Budget</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root {
             --primary: #6c5ce7;
-            --bg: #f3f4f6;
-            --card-bg: rgba(255, 255, 255, 0.9);
+            --primary-hover: #5b4bc4;
+            --bg-1: #74ebd5;
+            --bg-2: #9face6;
+            --card-bg: rgba(255, 255, 255, 0.85);
             --text: #2d3436;
-            --danger: #ff7675;
-            --success: #00b894;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background: linear-gradient(135deg, #74ebd5 0%, #9face6 100%); color: var(--text); min-height: 100vh; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 20px; position: relative; }
         
-        .card { background: var(--card-bg); padding: 20px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); backdrop-filter: blur(10px); animation: slideUp 0.5s ease-out; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        /* Animated Gradient Background */
+        body { 
+            background: linear-gradient(-45deg, #ff9a9e, #fecfef, #74ebd5, #9face6);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            color: var(--text); 
+            min-height: 100vh; 
+            padding: 20px; 
+            display: flex; 
+            justify-content: center; 
+            overflow-x: hidden;
+        }
+
+        .container { width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 20px; position: relative; perspective: 1000px; }
+        
+        /* Glassmorphism Cards with entrance animation */
+        .card { 
+            background: var(--card-bg); 
+            padding: 20px; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            backdrop-filter: blur(12px); 
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            animation: floatUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards; 
+        }
+        
+        /* Stagger the card entrances */
+        .card:nth-child(1) { animation-delay: 0.1s; }
+        .card:nth-child(2) { animation-delay: 0.3s; }
+        .card:nth-child(3) { animation-delay: 0.5s; }
+
         h1, h2 { text-align: center; margin-bottom: 15px; color: var(--primary); }
         
-        .settlement-badge { background: var(--primary); color: white; padding: 15px; border-radius: 10px; text-align: center; font-weight: bold; font-size: 1.2rem; margin-bottom: 10px; }
-        .totals { display: flex; justify-content: space-between; margin-top: 10px; font-weight: 500; }
+        /* Pulsing Settlement Badge */
+        .settlement-badge { 
+            background: linear-gradient(135deg, var(--primary), #a29bfe); 
+            color: white; 
+            padding: 15px; 
+            border-radius: 12px; 
+            text-align: center; 
+            font-weight: bold; 
+            font-size: 1.2rem; 
+            margin-bottom: 10px;
+            box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4);
+            animation: pulseGlow 2s infinite;
+            transition: transform 0.3s;
+        }
+        .settlement-badge:hover { transform: scale(1.02); }
+
+        .totals { display: flex; justify-content: space-between; margin-top: 10px; font-weight: 600; font-size: 1.1rem; }
         
         form { display: flex; flex-direction: column; gap: 12px; }
-        input, select, button { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; transition: all 0.3s; }
-        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 5px rgba(108, 92, 231, 0.3); }
-        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
-        button:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(108, 92, 231, 0.4); }
+        input, select, button { padding: 14px; border: 2px solid transparent; border-radius: 12px; font-size: 1rem; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); background: rgba(255,255,255,0.9); }
+        input:focus, select:focus { outline: none; border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(108, 92, 231, 0.2); }
+        
+        /* Bouncy Buttons */
+        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
+        button:hover { background: var(--primary-hover); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(108, 92, 231, 0.4); }
+        button:active { transform: translateY(1px); }
         
         .btn-cancel { background: #b2bec3; margin-top: 5px;}
+        .btn-cancel:hover { background: #95a5a6; box-shadow: 0 8px 20px rgba(149, 165, 166, 0.4); }
         
-        .expense-list { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
-        .expense-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); animation: fadeIn 0.4s ease-in; }
+        .expense-list { display: flex; flex-direction: column; gap: 12px; margin-top: 15px; }
+        
+        /* Individual List Items */
+        .expense-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 15px; 
+            background: white; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03); 
+            transition: transform 0.2s, box-shadow 0.2s;
+            opacity: 0; /* Hidden initially for staggered animation */
+            transform: translateX(-20px);
+        }
+        .expense-item:hover { transform: translateY(-2px) scale(1.01); box-shadow: 0 6px 15px rgba(0,0,0,0.08); }
+        
         .expense-info { display: flex; flex-direction: column; flex-grow: 1; }
-        .expense-title { font-weight: bold; }
-        .expense-meta { font-size: 0.8rem; color: #636e72; }
-        .expense-amount { font-weight: bold; color: var(--primary); margin-right: 15px; }
+        .expense-title { font-weight: 700; font-size: 1.05rem; color: #2d3436; }
+        .expense-meta { font-size: 0.85rem; color: #636e72; margin-top: 4px; }
+        .expense-amount { font-weight: 800; color: var(--primary); font-size: 1.1rem; margin-right: 15px; }
         
-        .action-btns { display: flex; gap: 8px; }
-        .icon-btn { background: none; border: none; padding: 5px; font-size: 1.1rem; cursor: pointer; color: var(--text); border-radius: 5px; box-shadow: none; }
-        .icon-btn:hover { background: #eee; transform: translateY(0); box-shadow: none; }
+        .action-btns { display: flex; gap: 5px; }
+        .icon-btn { background: rgba(240, 240, 240, 0.8); border: none; padding: 8px; font-size: 1rem; cursor: pointer; border-radius: 8px; transition: all 0.2s; }
+        .icon-btn:hover { background: #ffeaa7; transform: rotate(10deg) scale(1.1); }
+        .icon-btn.delete-btn:hover { background: #ff7675; color: white; transform: rotate(-10deg) scale(1.1); }
 
-        /* Modal Styles */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; opacity: 0; transition: opacity 0.3s; }
+        /* Smooth Modal Overlay */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(5px); justify-content: center; align-items: center; z-index: 1000; opacity: 0; transition: opacity 0.4s ease; }
         .modal-overlay.active { display: flex; opacity: 1; }
-        .modal-content { width: 90%; max-width: 400px; }
+        .modal-content { width: 90%; max-width: 400px; transform: scale(0.8); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .modal-overlay.active .modal-content { transform: scale(1); }
 
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* Keyframes */
+        @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        @keyframes floatUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideInRight { to { opacity: 1; transform: translateX(0); } }
+        @keyframes pulseGlow { 0% { box-shadow: 0 0 0 0 rgba(108, 92, 231, 0.5); } 70% { box-shadow: 0 0 0 10px rgba(108, 92, 231, 0); } 100% { box-shadow: 0 0 0 0 rgba(108, 92, 231, 0); } }
     </style>
 </head>
 <body>
@@ -56,15 +125,15 @@
 <div class="container">
     <div class="card">
         <h1>Warangal Trip 🏰</h1>
-        <div class="settlement-badge" id="settlement">Loading...</div>
+        <div class="settlement-badge" id="settlement">Calculating...</div>
         <div class="totals">
-            <span>Sasi Spent: ₹<span id="sasi-total">0</span></span>
-            <span>Lalitha Spent: ₹<span id="lalitha-total">0</span></span>
+            <span>Sasi: ₹<span id="sasi-total">0</span></span>
+            <span>Lalitha: ₹<span id="lalitha-total">0</span></span>
         </div>
     </div>
 
     <div class="card">
-        <h2>Add Expense</h2>
+        <h2>Add Expense ✨</h2>
         <form id="expense-form">
             <select id="payer" required>
                 <option value="" disabled selected>Who paid?</option>
@@ -75,11 +144,11 @@
             <input type="text" id="description" placeholder="What was it for?" required>
             <select id="category" required>
                 <option value="" disabled selected>Category (Where)</option>
-                <option value="Food">Food & Drinks</option>
-                <option value="Transport">Transport</option>
-                <option value="Tickets">Tickets & Entry</option>
-                <option value="Accommodation">Accommodation</option>
-                <option value="Misc">Miscellaneous</option>
+                <option value="Food">🍔 Food & Drinks</option>
+                <option value="Transport">🛺 Transport</option>
+                <option value="Tickets">🎟️ Tickets & Entry</option>
+                <option value="Accommodation">🏨 Accommodation</option>
+                <option value="Misc">🛍️ Miscellaneous</option>
             </select>
             <input type="date" id="expense_date" required>
             <button type="submit">Add Expense</button>
@@ -87,14 +156,14 @@
     </div>
 
     <div class="card">
-        <h2>Recent Expenses</h2>
+        <h2>Recent Expenses 💸</h2>
         <div class="expense-list" id="expense-list"></div>
     </div>
 </div>
 
 <div class="modal-overlay" id="editModal">
     <div class="card modal-content">
-        <h2>Edit Expense</h2>
+        <h2>Edit Expense ✏️</h2>
         <form id="edit-form">
             <input type="hidden" id="edit-id">
             <select id="edit-payer" required>
@@ -104,11 +173,11 @@
             <input type="number" id="edit-amount" required min="1" step="0.01">
             <input type="text" id="edit-description" required>
             <select id="edit-category" required>
-                <option value="Food">Food & Drinks</option>
-                <option value="Transport">Transport</option>
-                <option value="Tickets">Tickets & Entry</option>
-                <option value="Accommodation">Accommodation</option>
-                <option value="Misc">Miscellaneous</option>
+                <option value="Food">🍔 Food & Drinks</option>
+                <option value="Transport">🛺 Transport</option>
+                <option value="Tickets">🎟️ Tickets & Entry</option>
+                <option value="Accommodation">🏨 Accommodation</option>
+                <option value="Misc">🛍️ Miscellaneous</option>
             </select>
             <input type="date" id="edit-expense_date" required>
             <button type="submit">Update Expense</button>
@@ -120,25 +189,35 @@
 <script>
     document.getElementById('expense_date').valueAsDate = new Date();
     const API_URL = '/api/expenses'; 
-    let globalExpenses = []; // Store expenses in memory for easy editing
+    let globalExpenses = []; 
 
     async function fetchData() {
         try {
             const response = await fetch(API_URL);
             const data = await response.json();
-            globalExpenses = data.expenses; // Update global state
+            globalExpenses = data.expenses; 
             
             document.getElementById('sasi-total').innerText = data.sasiTotal.toFixed(2);
             document.getElementById('lalitha-total').innerText = data.lalithaTotal.toFixed(2);
             document.getElementById('settlement').innerText = data.settlementMessage;
 
+            // Trigger confetti if fully settled and money has been spent!
+            if (data.settlementMessage === "You're all squared up!" && (data.sasiTotal > 0 || data.lalithaTotal > 0)) {
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            }
+
             const list = document.getElementById('expense-list');
             list.innerHTML = '';
             
-            globalExpenses.forEach(exp => {
+            globalExpenses.forEach((exp, index) => {
                 const dateString = new Date(exp.expense_date).toISOString().split('T')[0];
                 const item = document.createElement('div');
                 item.className = 'expense-item';
+                
+                // Staggered animation delay using JS
+                item.style.animation = `slideInRight 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) forwards`;
+                item.style.animationDelay = `${index * 0.1}s`;
+
                 item.innerHTML = `
                     <div class="expense-info">
                         <span class="expense-title">${exp.description}</span>
@@ -147,7 +226,7 @@
                     <div class="expense-amount">₹${exp.amount}</div>
                     <div class="action-btns">
                         <button class="icon-btn" onclick="openModal(${exp.id})" title="Edit">✏️</button>
-                        <button class="icon-btn" onclick="deleteExpense(${exp.id})" title="Delete">🗑️</button>
+                        <button class="icon-btn delete-btn" onclick="deleteExpense(${exp.id})" title="Delete">🗑️</button>
                     </div>
                 `;
                 list.appendChild(item);
@@ -160,6 +239,9 @@
     // Add Expense
     document.getElementById('expense-form').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        btn.innerHTML = 'Adding... ⏳'; // Quick feedback animation
+        
         const payload = {
             payer: document.getElementById('payer').value,
             amount: document.getElementById('amount').value,
@@ -173,8 +255,10 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
+        
         e.target.reset();
         document.getElementById('expense_date').valueAsDate = new Date(); 
+        btn.innerHTML = 'Add Expense';
         fetchData();
     });
 
@@ -199,7 +283,6 @@
         document.getElementById('edit-description').value = exp.description;
         document.getElementById('edit-category').value = exp.category;
         
-        // Format date for the input field
         const dateString = new Date(exp.expense_date).toISOString().split('T')[0];
         document.getElementById('edit-expense_date').value = dateString;
         
@@ -232,6 +315,7 @@
         fetchData();
     });
 
+    // Initial load
     fetchData();
 </script>
 </body>
