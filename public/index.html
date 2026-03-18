@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warangal Trip Budget</title>
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --bg: #f3f4f6;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --text: #2d3436;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: linear-gradient(135deg, #74ebd5 0%, #9face6 100%); color: var(--text); min-height: 100vh; padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 20px; }
+        
+        .card { background: var(--card-bg); padding: 20px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); backdrop-filter: blur(10px); animation: slideUp 0.5s ease-out; }
+        h1, h2 { text-align: center; margin-bottom: 15px; color: var(--primary); }
+        
+        .settlement-badge { background: var(--primary); color: white; padding: 15px; border-radius: 10px; text-align: center; font-weight: bold; font-size: 1.2rem; margin-bottom: 10px; }
+        .totals { display: flex; justify-content: space-between; margin-top: 10px; font-weight: 500; }
+        
+        form { display: flex; flex-direction: column; gap: 12px; }
+        input, select, button { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; transition: all 0.3s; }
+        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 5px rgba(108, 92, 231, 0.3); }
+        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(108, 92, 231, 0.4); }
+        
+        .expense-list { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        .expense-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); animation: fadeIn 0.4s ease-in; }
+        .expense-info { display: flex; flex-direction: column; }
+        .expense-title { font-weight: bold; }
+        .expense-meta { font-size: 0.8rem; color: #636e72; }
+        .expense-amount { font-weight: bold; color: var(--primary); }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h1>Warangal Trip 🏰</h1>
+        <div class="settlement-badge" id="settlement">Loading...</div>
+        <div class="totals">
+            <span>Sasi Spent: ₹<span id="sasi-total">0</span></span>
+            <span>Lalitha Spent: ₹<span id="lalitha-total">0</span></span>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Add Expense</h2>
+        <form id="expense-form">
+            <select id="payer" required>
+                <option value="" disabled selected>Who paid?</option>
+                <option value="Sasi">Sasi</option>
+                <option value="Lalitha">Lalitha</option>
+            </select>
+            <input type="number" id="amount" placeholder="Amount (₹)" required min="1" step="0.01">
+            <input type="text" id="description" placeholder="What was it for?" required>
+            <select id="category" required>
+                <option value="" disabled selected>Category (Where)</option>
+                <option value="Food">Food & Drinks</option>
+                <option value="Transport">Transport</option>
+                <option value="Tickets">Tickets & Entry</option>
+                <option value="Accommodation">Accommodation</option>
+                <option value="Misc">Miscellaneous</option>
+            </select>
+            <input type="date" id="expense_date" required>
+            <button type="submit">Add Expense</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Recent Expenses</h2>
+        <div class="expense-list" id="expense-list"></div>
+    </div>
+</div>
+
+<script>
+    // Set today's date as default
+    document.getElementById('expense_date').valueAsDate = new Date();
+
+    const API_URL = '/api/expenses'; // Relative path for Vercel
+
+    async function fetchData() {
+        try {
+            const response = await fetch(API_URL);
+            const data = await response.json();
+            
+            document.getElementById('sasi-total').innerText = data.sasiTotal.toFixed(2);
+            document.getElementById('lalitha-total').innerText = data.lalithaTotal.toFixed(2);
+            document.getElementById('settlement').innerText = data.settlementMessage;
+
+            const list = document.getElementById('expense-list');
+            list.innerHTML = '';
+            
+            data.expenses.forEach(exp => {
+                const dateString = new Date(exp.expense_date).toLocaleDateString();
+                const item = document.createElement('div');
+                item.className = 'expense-item';
+                item.innerHTML = `
+                    <div class="expense-info">
+                        <span class="expense-title">${exp.description}</span>
+                        <span class="expense-meta">${exp.payer} • ${exp.category} • ${dateString}</span>
+                    </div>
+                    <div class="expense-amount">₹${exp.amount}</div>
+                `;
+                list.appendChild(item);
+            });
+        } catch (error) {
+            console.error("Error fetching data", error);
+        }
+    }
+
+    document.getElementById('expense-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+            payer: document.getElementById('payer').value,
+            amount: document.getElementById('amount').value,
+            description: document.getElementById('description').value,
+            category: document.getElementById('category').value,
+            expense_date: document.getElementById('expense_date').value
+        };
+
+        try {
+            await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            e.target.reset();
+            document.getElementById('expense_date').valueAsDate = new Date(); // reset date
+            fetchData();
+        } catch (error) {
+            console.error("Error saving expense", error);
+        }
+    });
+
+    fetchData();
+</script>
+</body>
+</html>
